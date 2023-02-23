@@ -76,9 +76,9 @@ public class WalletService : IWalletService
         };
     }
 
-    public async Task<Response<bool>> DeleteAsync(long userId, long id)
+    public async Task<Response<bool>> DeleteAsync(long id)
     {
-        var result = await this.walletRepository.SelectAsync(x => x.UserId == x.UserId && x.Id == id);
+        var result = await this.walletRepository.SelectAsync(x => x.Id == id);
         if (result is null)
         {
             return new Response<bool>()

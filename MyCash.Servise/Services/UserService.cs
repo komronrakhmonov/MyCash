@@ -12,6 +12,26 @@ public class UserService : IUserService
 {
     private readonly GenericRepository<User> userRepository = new GenericRepository<User>();
 
+    public async Task<Response<User>> CheckForExists(string email, string password)
+    {
+        var users = await this.userRepository.SelectAllAsync();
+        var user = users.FirstOrDefault(x => x.Email == email && x.Password == password);
+        if (user == null)
+        {
+            return new Response<User>()
+            {
+                StatusCode = 404,
+                Message = "not found",
+                Result = null
+            };
+        }
+        return new Response<User>()
+        {
+            StatusCode = 200,
+            Message = "Succes",
+            Result = user
+        };
+    }
 
     public async Task<Response<User>> CreateAsync(UserCreationDto user)
     {

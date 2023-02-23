@@ -1,29 +1,20 @@
 [
   {
-    "Description": "Oylik",
-    "Amount": 15.0,
+    "Description": "Transport",
+    "Amount": 10000.0,
     "CategoryId": 1,
-    "WalletId": 2,
+    "WalletId": 1,
     "Id": 1,
-    "CreatedAt": "2023-02-23T07:06:32.053129+05:00",
+    "CreatedAt": "2023-02-23T11:56:51.0462956+05:00",
     "UpdatedAt": null
   },
   {
-    "Description": "Oylik",
-    "Amount": 15.0,
+    "Description": "Transport uchun",
+    "Amount": 1400.0,
     "CategoryId": 1,
     "WalletId": 2,
     "Id": 2,
-    "CreatedAt": "2023-02-23T07:06:50.4113966+05:00",
-    "UpdatedAt": null
-  },
-  {
-    "Description": "Oylik",
-    "Amount": 15.0,
-    "CategoryId": 1,
-    "WalletId": 2,
-    "Id": 3,
-    "CreatedAt": "2023-02-23T07:43:30.5352609+05:00",
+    "CreatedAt": "2023-02-23T13:01:28.627903+05:00",
     "UpdatedAt": null
   }
 ]
