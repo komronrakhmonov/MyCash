@@ -1,0 +1,20 @@
+[
+  {
+    "FirstName": "Komronbek",
+    "LastName": "Rakhmonov",
+    "Email": "12345",
+    "Password": "12345",
+    "Id": 1,
+    "CreatedAt": "2023-02-23T11:55:16.3592487+05:00",
+    "UpdatedAt": null
+  },
+  {
+    "FirstName": "Komronbek",
+    "LastName": "Rakhmonov",
+    "Email": "komron12345",
+    "Password": "12345",
+    "Id": 2,
+    "CreatedAt": "2023-02-23T13:00:14.2581833+05:00",
+    "UpdatedAt": null
+  }
+]

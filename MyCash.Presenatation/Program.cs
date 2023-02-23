@@ -1,16 +1,6 @@
-﻿
-using MyCash.Servise.DTOs;
-using MyCash.Servise.Services;
-
-var income = new ExposeCreationDto()
-{
-    CategoryId = 1,
-    Description = "Oylik",
-    Amount = 15,
-    WalletId = 2,
-};
-
-var service = new ExposeService();
-await service.CreateAsync(income);
-
-
+﻿using MyCash.Presenatation.LogInPage;
+Console.BackgroundColor = ConsoleColor.Gray;
+Console.Clear();
+Console.ForegroundColor = ConsoleColor.Black;
+var login = new LoginPage();
+await login.Login();
