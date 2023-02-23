@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyCash.Data\MyCash.Data.csproj" />
+    <ProjectReference Include="..\MyCash.Domain\MyCash.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

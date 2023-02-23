@@ -1,0 +1,11 @@
+[
+  {
+    "Description": "Oylik",
+    "Amount": 15.0,
+    "CategoryId": 1,
+    "WalletId": 2,
+    "Id": 2,
+    "CreatedAt": "2023-02-22T22:05:07.1944361+05:00",
+    "UpdatedAt": "2023-02-22T22:21:27.0748859+05:00"
+  }
+]
