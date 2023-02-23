@@ -1,20 +1,11 @@
 [
   {
-    "Description": "Transport",
-    "Amount": 10000.0,
+    "Description": "home",
+    "Amount": 200.0,
     "CategoryId": 1,
     "WalletId": 1,
     "Id": 1,
-    "CreatedAt": "2023-02-23T11:56:51.0462956+05:00",
-    "UpdatedAt": null
-  },
-  {
-    "Description": "Transport uchun",
-    "Amount": 1400.0,
-    "CategoryId": 1,
-    "WalletId": 2,
-    "Id": 2,
-    "CreatedAt": "2023-02-23T13:01:28.627903+05:00",
+    "CreatedAt": "2023-02-23T13:55:14.1737546+05:00",
     "UpdatedAt": null
   }
 ]

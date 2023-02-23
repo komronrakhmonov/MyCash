@@ -1,20 +1,11 @@
 [
   {
-    "Description": "Oylik",
-    "Amount": 150000.0,
+    "Description": "Salary of February",
+    "Amount": 1500.0,
     "CategoryId": 1,
     "WalletId": 1,
     "Id": 1,
-    "CreatedAt": "2023-02-23T11:56:15.325418+05:00",
-    "UpdatedAt": null
-  },
-  {
-    "Description": "Oylik oldim",
-    "Amount": 15000.0,
-    "CategoryId": 2,
-    "WalletId": 2,
-    "Id": 2,
-    "CreatedAt": "2023-02-23T13:01:03.3284579+05:00",
+    "CreatedAt": "2023-02-23T13:53:05.2413004+05:00",
     "UpdatedAt": null
   }
 ]
