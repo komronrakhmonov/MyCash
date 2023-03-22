@@ -3,7 +3,7 @@ using MyCash.Domain.Enums;
 
 namespace MyCash.Servise.DTOs;
 
-public class WalletCreationDto
+public class WalletDto
 {
     public string Name { get; set; }
     public CurrencyType Currency { get; set; }

@@ -1,4 +1,7 @@
 ﻿
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using MyCash.Data.IRepositories;
 using MyCash.Data.Repositories;
 using MyCash.Domain.Entities;
 using MyCash.Servise.DTOs;
@@ -10,38 +13,46 @@ namespace MyCash.Servise.Services;
 public class IncomeService : IIncomeService
 {
 
-    private readonly GenericRepository<Income> incomeRepository = new GenericRepository<Income>();
-    private readonly WalletService walletService = new WalletService();
+    private readonly IIncomeRepository incomeRepository = new IncomeRepository();
+    private readonly IWalletService walletService = new WalletService();
+    private readonly IMapper mapper;
 
-    public async Task<Response<Income>> CreateAsync(IncomeCreationDto income)
+    public IncomeService()
     {
-        var newIncome = new Income()
-        {
-            CategoryId = income.CategoryId,
-            Amount = income.Amount,
-            Description = income.Description,
-            WalletId = income.WalletId,
-        };
 
-        var result = await this.incomeRepository.InsertAsync(newIncome);
+    }
+    public IncomeService(IMapper mapper)
+    {
+        this.mapper = mapper;
+    }
 
+    public IncomeService(IMapper mapper, IWalletService walletService)
+    {
+        this.mapper = mapper;
+        this.walletService = walletService;
+    }
+   
+    public async ValueTask<Response<IncomeDto>> CreateAsync(IncomeDto incomeDto)
+    {
+        var newIncome = mapper.Map<Income>(incomeDto);  
+        var income = await incomeRepository.InsertAsync(newIncome);
+        var wallet = await walletService.ChangeAmount(income.WalletId, income.Amount);
+        var mappedIncome = mapper.Map<IncomeDto>(newIncome);
 
-        var walletResult = await walletService.ChangeAmount(income.WalletId, income.Amount);
-
-        return new Response<Income>()
+        return new Response<IncomeDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedIncome
         };
 
     }
 
-    public async Task<Response<bool>> DeleteAsync(long walletId, long id)
+    public async ValueTask<Response<bool>> DeleteAsync(long id)
     {
-        var result = await this.incomeRepository.SelectAsync(x => x.WalletId == walletId && x.Id == id);
-        var amount = result.Amount;
-        if (result is null)
+        var income = await this.incomeRepository.SelectAsync(id);
+        var amount = income.Amount;
+        if (income is null)
         {
             return new Response<bool>()
             {
@@ -50,8 +61,8 @@ public class IncomeService : IIncomeService
                 Result = false
             };
         }
-        await this.incomeRepository.DeleteAsync(x => x.WalletId == walletId && x.Id == id);
-        await walletService.ChangeAmount(walletId, -amount);
+        await incomeRepository.DeleteAsync(id);
+        await walletService.ChangeAmount(income.WalletId, -amount);
 
         return new Response<bool>()
         {
@@ -61,43 +72,47 @@ public class IncomeService : IIncomeService
         };
     }
 
-    public async Task<Response<List<Income>>> GetAllAsync(Predicate<Income> predicate)
+    public async ValueTask<Response<List<IncomeDto>>> GetAllAsync()
     {
-        var results = await this.incomeRepository.SelectAllAsync(predicate);
-        return new Response<List<Income>>()
+        var incomes = incomeRepository.SelectAllAsync()
+                                      .Include(x => x.Wallet)
+                                          .ThenInclude(w => w.User);
+        var mappedIncomes = mapper.Map<List<IncomeDto>>(incomes);
+        return new Response<List<IncomeDto>>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = results
+            Result = mappedIncomes
         };
     }
 
-    public async Task<Response<Income>> GetAsync(Predicate<Income> predicate)
+    public async ValueTask<Response<IncomeDto>> GetAsync(long id)
     {
-        var result = await this.incomeRepository.SelectAsync(predicate);
-        if (result is null)
+        var income = await incomeRepository.SelectAsync(id);
+        if (income is null)
         {
-            return new Response<Income>()
+            return new Response<IncomeDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
                 Result = null
             };
         }
-        return new Response<Income>()
+        var mappedIncome = mapper.Map<IncomeDto>(income);
+        return new Response<IncomeDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedIncome
         };
     }
 
-    public async Task<Response<Income>> UpdateAsync(long walletId, long id, IncomeCreationDto income)
+    public async ValueTask<Response<IncomeDto>> UpdateAsync(long id, IncomeDto incomeDto)
     {
-        var result = await this.incomeRepository.SelectAsync(x => x.Id == id);
-        if (result is null)
+        var income = await incomeRepository.SelectAsync(id);
+        if (income is null)
         {
-            return new Response<Income>()
+            return new Response<IncomeDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
@@ -105,27 +120,35 @@ public class IncomeService : IIncomeService
             };
         }
 
-        var newIncome = new Income()
-        {
-            Id = result.Id,
-            Description = income.Description,
-            Amount = income.Amount,
-            CategoryId = income.CategoryId,
-            WalletId = income.WalletId,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = DateTime.Now,
-        };
+        await walletService.ChangeAmount(income.WalletId, -income.Amount);
+        income.Description = incomeDto.Description;
+        income.Amount = incomeDto.Amount;
+        income.UpdatedAt = DateTime.Now;
+        await walletService.ChangeAmount(income.WalletId, income.Amount);
 
-        await this.incomeRepository.UpdateAsync(x => x.Id == id, newIncome);
+        var result = await incomeRepository.UpdateAsync(income);
+        var mappedIncome = mapper.Map<IncomeDto>(result);
 
-        await walletService.ChangeAmount(walletId, -result.Amount);
-        await walletService.ChangeAmount(walletId, newIncome.Amount);
-
-        return new Response<Income>()
+        return new Response<IncomeDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedIncome
+        };
+    }
+
+    public async ValueTask<Response<List<IncomeDto>>> GetAllByWalletIdAsync(long walletId)
+    {
+        var incomes = incomeRepository.SelectAllAsync()
+                                      .Where(s => s.WalletId.Equals(walletId))
+                                      .Include(x => x.Wallet)
+                                          .ThenInclude(w => w.User);
+        var mappedIncomes = mapper.Map<List<IncomeDto>>(incomes);
+        return new Response<List<IncomeDto>>()
+        {
+            StatusCode = 200,
+            Message = "Success",
+            Result = mappedIncomes
         };
     }
 }

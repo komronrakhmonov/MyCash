@@ -1,62 +1,70 @@
 ﻿
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using MyCash.Data.IRepositories;
 using MyCash.Data.Repositories;
 using MyCash.Domain.Entities;
 using MyCash.Servise.DTOs;
 using MyCash.Servise.Helpers;
 using MyCash.Servise.Interfaces;
-using System;
+
 
 namespace MyCash.Servise.Services;
 
 public class UserService : IUserService
 {
-    private readonly GenericRepository<User> userRepository = new GenericRepository<User>();
-
-    public async Task<Response<User>> CheckForExists(string email, string password)
+    private readonly IUserRepository userRepository = new UserRepository();
+    private readonly IMapper mapper;
+    public UserService()
     {
-        var users = await this.userRepository.SelectAllAsync();
-        var user = users.FirstOrDefault(x => x.Email == email && x.Password == password);
+
+    }
+    public UserService(IMapper mapper)
+    {
+        this.mapper = mapper;
+    }
+
+    public async ValueTask<Response<UserDto>> CheckForExists(string email, string password)
+    {
+        var user = userRepository.SelectAllAsync()
+                                .FirstOrDefaultAsync(x => x.Email == email && x.Password == password);
         if (user == null)
         {
-            return new Response<User>()
+            return new Response<UserDto>()
             {
                 StatusCode = 404,
                 Message = "not found",
                 Result = null
             };
         }
-        return new Response<User>()
+        var mappedUser = mapper.Map<UserDto>(user); 
+        return new Response<UserDto>()
         {
             StatusCode = 200,
             Message = "Succes",
-            Result = user
+            Result = mappedUser
         };
     }
 
-    public async Task<Response<User>> CreateAsync(UserCreationDto user)
+    public async ValueTask<Response<UserDto>> CreateAsync(UserDtoForCreation userDtoForCreation)
     {
-        var results = await this.userRepository.SelectAllAsync();       
-        var result = results.FirstOrDefault(x => x.Email == user.Email);
-        if (result is null)
+        var user = userRepository.SelectAllAsync()
+                                .FirstOrDefault(x => x.Email.Equals(userDtoForCreation.Email));
+       
+        if (user is null)
         {
-            var newUser = new User()
-            {
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                Password = user.Password,
-            };
+            var newUser = mapper.Map<User>(userDtoForCreation);
+            var result = await this.userRepository.InsertAsync(newUser);
+            var mappedResult = mapper.Map<UserDto>(result);
 
-            var newResult = await this.userRepository.InsertAsync(newUser);
-
-            return new Response<User>()
+            return new Response<UserDto>()
             {
                 StatusCode = 200,
                 Message = "Success",
-                Result = newResult
+                Result = mappedResult
             };
         }
-        return new Response<User>()
+        return new Response<UserDto>()
         {
             StatusCode = 403,
             Message = "User is alredy exists!",
@@ -65,9 +73,9 @@ public class UserService : IUserService
 
     }
 
-    public async Task<Response<bool>> DeleteAsync(Predicate<User> predicate)
+    public async ValueTask<Response<bool>> DeleteAsync(long id)
     {
-        var result = await this.userRepository.SelectAsync(predicate);
+        var result = await userRepository.SelectAsync(id);
         if (result is null)
         {
             return new Response<bool>()
@@ -77,7 +85,7 @@ public class UserService : IUserService
                 Result = false
             };
         }
-        await this.userRepository.DeleteAsync(predicate);
+        await userRepository.DeleteAsync(id);
         return new Response<bool>()
         {
             StatusCode = 200,
@@ -86,43 +94,45 @@ public class UserService : IUserService
         };
     }
 
-    public async Task<Response<List<User>>> GetAllAsync(Predicate<User> predicate)
+    public async ValueTask<Response<List<UserDto>>> GetAllAsync()
     {        
-        var results = await this.userRepository.SelectAllAsync(predicate);
-        return new Response<List<User>>()
+        var users = userRepository.SelectAllAsync();
+        var mappedUsers = mapper.Map<List<UserDto>>(users);
+        return new Response<List<UserDto>>()
         {
-            StatusCode = 200,
+            StatusCode = 200,   
             Message = "Success",
-            Result = results
+            Result = mappedUsers
         };
     }
 
-    public async Task<Response<User>> GetAsync(Predicate<User> predicate)
+    public async ValueTask<Response<UserDto>> GetAsync(long id)
     {
-        var result = await this.userRepository.SelectAsync(predicate);
-        if (result is null)
+        var user = await userRepository.SelectAsync(id);
+        if (user is null)
         {
-            return new Response<User>()
+            return new Response<UserDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
                 Result = null
             };
         }
-        return new Response<User>()
+        var mappedUser = mapper.Map<UserDto>(user);
+        return new Response<UserDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedUser
         };
     }
 
-    public async Task<Response<User>> UpdateAsync(Predicate<User> predicate, UserCreationDto user)
+    public async ValueTask<Response<UserDto>> UpdateAsync(long id, UserDtoForCreation userDtoForCreation)
     {
-        var result = await this.userRepository.SelectAsync(predicate);
-        if (result is null)
+        var user = await userRepository.SelectAsync(id);
+        if (user is null)
         {
-            return new Response<User>()
+            return new Response<UserDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
@@ -130,24 +140,20 @@ public class UserService : IUserService
             };
         }
 
-        var newUser = new User()
-        {
-            Id = result.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Password = user.Password,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = DateTime.Now,
-        };
+        user.FirstName = userDtoForCreation.FirstName;
+        user.LastName = userDtoForCreation.LastName;
+        user.Email = userDtoForCreation.Email;
+        user.Password = userDtoForCreation.Password;
+        user.UpdatedAt = DateTime.Now;
 
-        await this.userRepository.UpdateAsync(predicate, newUser);
+        var result = await userRepository.UpdateAsync(user);
+        var mappedUser = mapper.Map<UserDto>(result);
 
-        return new Response<User>()
+        return new Response<UserDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedUser
         };
 
     }
