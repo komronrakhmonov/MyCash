@@ -1,5 +1,4 @@
 ﻿
-using MyCash.Domain.Entities;
 using MyCash.Servise.DTOs;
 using MyCash.Servise.Helpers;
 
@@ -7,10 +6,10 @@ namespace MyCash.Servise.Interfaces;
 
 public interface IUserService
 {
-    Task<Response<User>> CreateAsync(UserCreationDto user);
-    Task<Response<bool>> DeleteAsync(Predicate<User> predicate);
-    Task<Response<User>> GetAsync(Predicate<User> predicate);
-    Task<Response<List<User>>> GetAllAsync(Predicate<User> predicate);
-    Task<Response<User>> UpdateAsync(Predicate<User> predicate, UserCreationDto user);
-    Task<Response<User>> CheckForExists (string email, string password);
+    ValueTask<Response<UserDto>> CreateAsync(UserDtoForCreation userDtoForCreation);
+    ValueTask<Response<bool>> DeleteAsync(long id);
+    ValueTask<Response<UserDto>> GetAsync(long id);
+    ValueTask<Response<List<UserDto>>> GetAllAsync();
+    ValueTask<Response<UserDto>> UpdateAsync(long id, UserDtoForCreation userDtoForCreation);
+    ValueTask<Response<UserDto>> CheckForExists (string email, string password);
 }

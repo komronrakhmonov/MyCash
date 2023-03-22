@@ -10,4 +10,5 @@ public class Wallet : Auditable
     public decimal Amount { get; set; } = 0;
     public CurrencyType Currency { get; set; }
     public long UserId { get; set; }
+    public User User { get; set; }
 }

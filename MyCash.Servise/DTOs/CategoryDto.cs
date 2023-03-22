@@ -3,7 +3,7 @@ using MyCash.Domain.Enums;
 
 namespace MyCash.Servise.DTOs;
 
-public class CategoryCreationDto
+public class CategoryDto
 {
     public string Name { get; set; }
     public string Description { get; set; }

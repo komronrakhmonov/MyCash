@@ -7,9 +7,10 @@ namespace MyCash.Servise.Interfaces;
 
 public interface IExposeService
 {
-    Task<Response<Expose>> CreateAsync(ExposeCreationDto expose);
-    Task<Response<bool>> DeleteAsync(long walletId, long id);
-    Task<Response<Expose>> GetAsync(Predicate<Expose> predicate);
-    Task<Response<List<Expose>>> GetAllAsync(Predicate<Expose> predicate);
-    Task<Response<Expose>> UpdateAsync(long walletId, long id, ExposeCreationDto expose);
+    ValueTask<Response<ExposeDto>> CreateAsync(ExposeDto exposeDto);
+    ValueTask<Response<bool>> DeleteAsync(long id);
+    ValueTask<Response<ExposeDto>> GetAsync(long id);
+    ValueTask<Response<List<ExposeDto>>> GetAllAsync();
+    ValueTask<Response<List<ExposeDto>>> GetAllByWalletIdAsync(long WalletId);
+    ValueTask<Response<ExposeDto>> UpdateAsync(long id, ExposeDto exposeDto);
 }

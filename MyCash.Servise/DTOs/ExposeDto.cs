@@ -1,6 +1,6 @@
 ﻿namespace MyCash.Servise.DTOs;
 
-public class ExposeCreationDto
+public class ExposeDto
 {
     public string Description { get; set; }
     public decimal Amount { get; set; }

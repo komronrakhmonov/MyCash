@@ -1,39 +1,45 @@
 ﻿
+using AutoMapper;
+using MyCash.Data.IRepositories;
 using MyCash.Data.Repositories;
 using MyCash.Domain.Entities;
 using MyCash.Servise.DTOs;
 using MyCash.Servise.Helpers;
 using MyCash.Servise.Interfaces;
+using System.Threading.Tasks;
 
 namespace MyCash.Servise.Services;
 
 public class CategoryService : ICategoryService
 {
-    private readonly GenericRepository<Category> categoryRepository = new GenericRepository<Category>();
-    public async Task<Response<Category>> CreateAsync(CategoryCreationDto category)
+    private readonly ICategoryRepository categoryRepository = new CategoryRepository();
+    private readonly IMapper mapper;
+    public CategoryService()
     {
-        var results = await this.categoryRepository.SelectAllAsync();
-        var result = results.FirstOrDefault(x => x.Name.ToLower() == category.Name.ToLower());
-        if (result is null)
+
+    }
+    public CategoryService(IMapper mapper)
+    {
+        this.mapper = mapper;
+    }
+    public async ValueTask<Response<CategoryDto>> CreateAsync(CategoryDto categoryDto)
+    {
+        var category = categoryRepository.SelectAllAsync()
+            .FirstOrDefault(x => x.Name.ToLower() == categoryDto.Name.ToLower());
+        if (category is null)
         {
-            var newCategory = new Category()
-            {
-                Name = category.Name,
-                Description = category.Description,
-                Type = category.Type
+            var newCategory = mapper.Map<Category>(categoryDto);   
+            var newResult = await categoryRepository.InsertAsync(newCategory);
+            var mappedCategory = mapper.Map<CategoryDto>(newResult);
 
-            };
-
-            var newResult = await this.categoryRepository.InsertAsync(newCategory);
-
-            return new Response<Category>()
+            return new Response<CategoryDto>()
             {
                 StatusCode = 200,
                 Message = "Success",
-                Result = newResult
+                Result = mappedCategory
             };
         }
-        return new Response<Category>()
+        return new Response<CategoryDto>()
         {
             StatusCode = 403,
             Message = "Category is alredy exists!",
@@ -41,10 +47,10 @@ public class CategoryService : ICategoryService
         };
     }
 
-    public async Task<Response<bool>> DeleteAsync(Predicate<Category> predicate)
+    public async ValueTask<Response<bool>> DeleteAsync(long id)
     {
-        var result = await this.categoryRepository.SelectAsync(predicate);
-        if (result is null)
+        var category = await categoryRepository.SelectAsync(id);
+        if (category is null)
         {
             return new Response<bool>()
             {
@@ -53,7 +59,7 @@ public class CategoryService : ICategoryService
                 Result = false
             };
         }
-        await this.categoryRepository.DeleteAsync(predicate);
+        await categoryRepository.DeleteAsync(id);
         return new Response<bool>()
         {
             StatusCode = 200,
@@ -62,67 +68,63 @@ public class CategoryService : ICategoryService
         };
     }
 
-    public async Task<Response<List<Category>>> GetAllAsync(Predicate<Category> predicate)
+    public async ValueTask<Response<List<CategoryDto>>> GetAllAsync()
     {
-        var results = await this.categoryRepository.SelectAllAsync(predicate);
-        return new Response<List<Category>>()
+        var categories = categoryRepository.SelectAllAsync();
+        var mappedCategoris = mapper.Map<List<CategoryDto>>(categories);
+        return new Response<List<CategoryDto>>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = results
+            Result = mappedCategoris
         };
     }
 
-    public async Task<Response<Category>> GetAsync(Predicate<Category> predicate)
+    public async ValueTask<Response<CategoryDto>> GetAsync(long id)
     {
-        var result = await this.categoryRepository.SelectAsync(predicate);
-        if (result is null)
+        var category = await categoryRepository.SelectAsync(id);
+        if (category is null)
         {
-            return new Response<Category>()
+            return new Response<CategoryDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
                 Result = null
             };
         }
-        return new Response<Category>()
+        var mappedCategory = mapper.Map<CategoryDto>(category); 
+        return new Response<CategoryDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedCategory
         };
     }
 
-    public async Task<Response<Category>> UpdateAsync(Predicate<Category> predicate, CategoryCreationDto category)
+    public async ValueTask<Response<CategoryDto>> UpdateAsync(long id, CategoryDto categoryDto)
     {
-        var result = await this.categoryRepository.SelectAsync(predicate);
-        if (result is null)
+        var category = await categoryRepository.SelectAsync(id);
+        if (category is null)
         {
-            return new Response<Category>()
+            return new Response<CategoryDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
                 Result = null
             };
         }
+        category.Name = categoryDto.Name;
+        category.Description = categoryDto.Description;
+        category.UpdatedAt = DateTime.Now;
+        
+        await categoryRepository.UpdateAsync(category);
+        var mappedCategory = mapper.Map<CategoryDto>(category); 
 
-        var newCategory = new Category()
-        {
-            Id = result.Id,
-            Name = category.Name,
-            Description = category.Description,
-            Type = category.Type,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = DateTime.Now,
-        };
-
-        await this.categoryRepository.UpdateAsync(predicate, newCategory);
-
-        return new Response<Category>()
+        return new Response<CategoryDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedCategory
         };
     }
 }

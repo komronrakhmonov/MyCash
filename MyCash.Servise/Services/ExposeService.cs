@@ -1,4 +1,7 @@
 ﻿
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using MyCash.Data.IRepositories;
 using MyCash.Data.Repositories;
 using MyCash.Domain.Entities;
 using MyCash.Servise.DTOs;
@@ -9,37 +12,45 @@ namespace MyCash.Servise.Services;
 
 public class ExposeService : IExposeService
 {
-    private readonly GenericRepository<Expose> exposeRepository = new GenericRepository<Expose>();
-    private readonly WalletService walletService = new WalletService();
+    private readonly IExposeRepository exposeRepository= new ExposeRepository();
+    private readonly IWalletService walletService = new WalletService();
+    private readonly IMapper mapper;
 
-    public async Task<Response<Expose>> CreateAsync(ExposeCreationDto expose)
+    public ExposeService()
     {
-        var newExpose = new Expose()
-        {
-            CategoryId = expose.CategoryId,
-            Amount = expose.Amount,
-            Description = expose.Description,
-            WalletId = expose.WalletId,
-        };
 
-        var result = await this.exposeRepository.InsertAsync(newExpose);
+    }
+    public ExposeService(IMapper mapper)
+    {
+        this.mapper = mapper;
+    }
+    public ExposeService(IMapper mapper, IWalletService walletService)
+    {
+        this.mapper = mapper;
+        this.walletService = walletService;
+    }
 
+    public async ValueTask<Response<ExposeDto>> CreateAsync(ExposeDto exposeDto)
+    {
+        var newExpose = mapper.Map<Expose>(exposeDto);
+        var expose = await exposeRepository.InsertAsync(newExpose);
+        var wallet = await walletService.ChangeAmount(expose.WalletId, -expose.Amount);
+        var mappedExpose = mapper.Map<ExposeDto>(newExpose);
 
-        var walletResult = await walletService.ChangeAmount(expose.WalletId, -expose.Amount);
-
-        return new Response<Expose>()
+        return new Response<ExposeDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedExpose
         };
+
     }
 
-    public async Task<Response<bool>> DeleteAsync(long walletId, long id)
+    public async ValueTask<Response<bool>> DeleteAsync(long id)
     {
-        var result = await this.exposeRepository.SelectAsync(x => x.WalletId == walletId && x.Id == id);
-        var amount = result.Amount;
-        if (result is null)
+        var expose = await this.exposeRepository.SelectAsync(id);
+        var amount = expose.Amount;
+        if (expose is null)
         {
             return new Response<bool>()
             {
@@ -48,8 +59,8 @@ public class ExposeService : IExposeService
                 Result = false
             };
         }
-        await this.exposeRepository.DeleteAsync(x => x.WalletId == walletId && x.Id == id);
-        await walletService.ChangeAmount(walletId, amount);
+        await exposeRepository.DeleteAsync(id);
+        await walletService.ChangeAmount(expose.WalletId, amount);
 
         return new Response<bool>()
         {
@@ -59,43 +70,47 @@ public class ExposeService : IExposeService
         };
     }
 
-    public async Task<Response<List<Expose>>> GetAllAsync(Predicate<Expose> predicate)
+    public async ValueTask<Response<List<ExposeDto>>> GetAllAsync()
     {
-        var results = await this.exposeRepository.SelectAllAsync(predicate);
-        return new Response<List<Expose>>()
+        var exposes = exposeRepository.SelectAllAsync()
+                                      .Include(x => x.Wallet)
+                                          .ThenInclude(w => w.User);
+        var mappedExposes = mapper.Map<List<ExposeDto>>(exposes);
+        return new Response<List<ExposeDto>>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = results
+            Result = mappedExposes
         };
     }
 
-    public async Task<Response<Expose>> GetAsync(Predicate<Expose> predicate)
+    public async ValueTask<Response<ExposeDto>> GetAsync(long id)
     {
-        var result = await this.exposeRepository.SelectAsync(predicate);
-        if (result is null)
+        var expose = await exposeRepository.SelectAsync(id);
+        if (expose is null)
         {
-            return new Response<Expose>()
+            return new Response<ExposeDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
                 Result = null
             };
         }
-        return new Response<Expose>()
+        var mappedExpose = mapper.Map<ExposeDto>(expose);
+        return new Response<ExposeDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedExpose
         };
     }
 
-    public async Task<Response<Expose>> UpdateAsync(long walletId, long id, ExposeCreationDto expose)
+    public async ValueTask<Response<ExposeDto>> UpdateAsync(long id, ExposeDto exposeDto)
     {
-        var result = await this.exposeRepository.SelectAsync(x => x.Id == id);
-        if (result is null)
+        var expose = await exposeRepository.SelectAsync(id);
+        if (expose is null)
         {
-            return new Response<Expose>()
+            return new Response<ExposeDto>()
             {
                 StatusCode = 404,
                 Message = "NOT FOUND",
@@ -103,27 +118,35 @@ public class ExposeService : IExposeService
             };
         }
 
-        var newExpose = new Expose()
-        {
-            Id = result.Id,
-            Description = expose.Description,
-            Amount = expose.Amount,
-            CategoryId = expose.CategoryId,
-            WalletId = expose.WalletId,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = DateTime.Now,
-        };
+        await walletService.ChangeAmount(expose.WalletId, expose.Amount);
+        expose.Description = exposeDto.Description;
+        expose.Amount = exposeDto.Amount;
+        expose.UpdatedAt = DateTime.Now;
+        await walletService.ChangeAmount(expose.WalletId, -expose.Amount);
 
-        await this.exposeRepository.UpdateAsync(x => x.Id == id, newExpose);
+        var result = await exposeRepository.UpdateAsync(expose);
+        var mappedExpose = mapper.Map<ExposeDto>(result);
 
-        await walletService.ChangeAmount(walletId, result.Amount);
-        await walletService.ChangeAmount(walletId, -newExpose.Amount);
-
-        return new Response<Expose>()
+        return new Response<ExposeDto>()
         {
             StatusCode = 200,
             Message = "Success",
-            Result = result
+            Result = mappedExpose
+        };
+    }
+
+    public async ValueTask<Response<List<ExposeDto>>> GetAllByWalletIdAsync(long walletId)
+    {
+        var exposes = exposeRepository.SelectAllAsync()
+                                      .Where(s => s.WalletId.Equals(walletId))
+                                      .Include(x => x.Wallet)
+                                          .ThenInclude(w => w.User);
+        var mappedExposes = mapper.Map<List<ExposeDto>>(exposes);
+        return new Response<List<ExposeDto>>()
+        {
+            StatusCode = 200,
+            Message = "Success",
+            Result = mappedExposes
         };
     }
 }
